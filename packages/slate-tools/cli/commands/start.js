@@ -23,7 +23,7 @@ const options = {
 const spinner = ora(chalk.magenta(' Compiling...'));
 let firstSync = true;
 let skipSettingsData = null;
-let continueIfPublishedTheme = null;
+const continueIfPublishedTheme = null;
 
 const devServer = new DevServer(options);
 const previewUrl = `https://${env.getStoreValue()}?preview_theme_id=${env.getThemeIdValue()}`;
@@ -81,13 +81,22 @@ devServer.compiler.hooks.done.tap('CLI', (stats) => {
 });
 
 devServer.client.hooks.beforeSync.tapPromise('CLI', async (files) => {
+  console.log('sync');
   if (firstSync && argv.skipFirstDeploy) {
     devServer.skipDeploy = true;
     return;
   }
 
   if (continueIfPublishedTheme === null) {
-    continueIfPublishedTheme = await promptContinueIfPublishedTheme();
+    try {
+      continueIfPublishedTheme = await promptContinueIfPublishedTheme();
+    } catch (error) {
+      event('slate-tools:start:error', {
+        version: packageJson.version,
+        error,
+      });
+      console.log(`\n${chalk.red(error)}\n`);
+    }
   }
 
   if (!continueIfPublishedTheme) {
